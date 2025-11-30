@@ -21,12 +21,19 @@ jak narazie mam tyle ale pewnie coś się przemyśli z wymiarami juz od buta wyb
 jak juz sb tego remote dodasz gita w IDE to terminalu:
 
 cd backend
+
 python -m venv venv
+
 venv\Scripts\activate
+
 pip install fastapi uvicorn
 
 cd ..
+
 npm create vite@latest frontend -- --template react 
+
 Jeśli zapyta o instalację pakietu create-vite, to y
+
 cd frontend
+
 npm install
