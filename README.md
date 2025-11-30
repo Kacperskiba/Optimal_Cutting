@@ -18,7 +18,7 @@ User daje info potrzebne ---> UI przyjmuje dane i wdupca w JSONa ---> Wysyłamy 
 jak narazie mam tyle ale pewnie coś się przemyśli z wymiarami juz od buta wybieranymi, jakieś popularne żeby nie wpisywać ciągle.
 
 
-jak juz sb tego remote dodasz gita w IDE to terminalu:
+jak juz sb tego remote gita dodasz to w IDE terminalu żeby środowiska skonfigurować:
 
 cd backend
 
