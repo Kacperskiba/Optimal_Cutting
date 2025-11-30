@@ -1,6 +1,7 @@
 Dobra to tak:
 
 Backend ---> FastAPI
+
 Frontend ---> React powinno być proste coś sie wygeneruje
 
 Mamy do zrobienia te cięcie płyt, algorytmy można z biblioterki gotowej posprawdzać albo poszponcic z własnym jakimś tam są w miare nie najgorsze. Zawsze beda heurystyczne i musza mieć logike ogarnieta.
