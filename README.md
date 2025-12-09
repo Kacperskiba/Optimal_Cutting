@@ -16,3 +16,24 @@ Dobra głownie będzie apka działać bedzie tak:
 User daje info potrzebne ---> UI przyjmuje dane i wdupca w JSONa ---> Wysyłamy do FastAPI ---> probujemy asyncha użyć ale zobaczymy żeby była responsywna w miarę apka ---> algortytm dane wywala JSON leci na strone
 ---> fajny interfejs mozesz kliknąć element i ci jego wymiary może wypisać, kolorki dla różnych elementów
 jak narazie mam tyle ale pewnie coś się przemyśli z wymiarami juz od buta wybieranymi, jakieś popularne żeby nie wpisywać ciągle.
+
+
+jak juz sb tego remote gita dodasz to w IDE terminalu żeby środowiska skonfigurować:
+
+cd backend
+
+python -m venv venv
+
+venv\Scripts\activate
+
+pip install fastapi uvicorn
+
+cd ..
+
+npm create vite@latest frontend -- --template react 
+
+Jeśli zapyta o instalację pakietu create-vite, to y
+
+cd frontend
+
+npm install
