@@ -3,6 +3,23 @@ import { useRef, useEffect } from 'react';
 export function CuttingVisualizer({ result, config }) {
   const canvasRef = useRef(null);
 
+  // Stałe do obliczeń wizualnych
+  const padding = 40;
+  const canvasWidth = 1000;
+
+  // Obliczanie skali
+  const availableWidth = canvasWidth - (2 * padding);
+  const scale = availableWidth / config.plateLength;
+
+  const plateVisualHeight = config.plateWidth * scale;
+  const plateVisualWidth = config.plateLength * scale;
+
+  const gapBetweenPlates = 60;
+  const headerHeight = 40;
+  const footerHeight = 40;
+  const onePlateSectionHeight = headerHeight + plateVisualHeight + footerHeight + gapBetweenPlates;
+  const totalCanvasHeight = (result.plates.length * onePlateSectionHeight) + 100;
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -10,174 +27,116 @@ export function CuttingVisualizer({ result, config }) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Clear canvas
+    // Czyścimy canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Drawing settings
-    const padding = 60;
-    const maxPlateWidth = canvas.width - 2 * padding;
-    const maxPlateHeight = 300;
-    
-    // Calculate scale to fit plate dimensions
-    const scaleX = maxPlateWidth / config.plateLength;
-    const scaleY = maxPlateHeight / config.plateWidth;
-    const scale = Math.min(scaleX, scaleY);
-
-    const plateVisualWidth = config.plateLength * scale;
-    const plateVisualHeight = config.plateWidth * scale;
-    const plateSpacing = plateVisualHeight + 80;
-
-    // Colors
     const colors = [
-      '#3b82f6', // blue
-      '#10b981', // green
-      '#f59e0b', // amber
-      '#8b5cf6', // purple
-      '#ec4899', // pink
-      '#06b6d4', // cyan
-      '#ef4444', // red
-      '#14b8a6', // teal
+      '#60a5fa', '#34d399', '#fbbf24', '#a78bfa',
+      '#f472b6', '#22d3ee', '#f87171', '#2dd4bf',
     ];
 
     result.plates.forEach((plate, plateIndex) => {
-      const plateY = padding + plateIndex * plateSpacing;
+      const startY = padding + (plateIndex * onePlateSectionHeight);
 
-      // Draw plate background
-      ctx.fillStyle = '#f9fafb';
-      ctx.fillRect(padding, plateY, plateVisualWidth, plateVisualHeight);
+      // --- TŁUMACZENIE 1: Nagłówek płyty ---
+      ctx.fillStyle = '#111827';
+      ctx.font = 'bold 16px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(`Płyta nr ${plate.plateNumber}`, padding, startY + 15);
+
+      // Rysowanie płyty matki
+      const boardY = startY + headerHeight;
+      ctx.fillStyle = '#f3f4f6';
+      ctx.fillRect(padding, boardY, plateVisualWidth, plateVisualHeight);
       ctx.strokeStyle = '#9ca3af';
       ctx.lineWidth = 2;
-      ctx.strokeRect(padding, plateY, plateVisualWidth, plateVisualHeight);
+      ctx.strokeRect(padding, boardY, plateVisualWidth, plateVisualHeight);
 
-      // Draw plate label
-      ctx.fillStyle = '#374151';
-      ctx.font = '14px sans-serif';
-      ctx.textAlign = 'right';
-      ctx.fillText(`Plate ${plate.plateNumber}`, padding - 10, plateY + 20);
-
-      // Draw dimensions
+      // Wymiary zewnętrzne
       ctx.fillStyle = '#6b7280';
-      ctx.font = '11px sans-serif';
+      ctx.font = '12px sans-serif';
       ctx.textAlign = 'center';
-      // Length dimension
-      ctx.fillText(
-        `${config.plateLength}mm`,
-        padding + plateVisualWidth / 2,
-        plateY + plateVisualHeight + 15
-      );
-      // Width dimension
+      ctx.fillText(`${config.plateLength}mm`, padding + plateVisualWidth/2, boardY - 8);
+
       ctx.save();
-      ctx.translate(padding - 30, plateY + plateVisualHeight / 2);
-      ctx.rotate(-Math.PI / 2);
+      ctx.translate(padding - 10, boardY + plateVisualHeight/2);
+      ctx.rotate(-Math.PI/2);
       ctx.fillText(`${config.plateWidth}mm`, 0, 0);
       ctx.restore();
 
-      // Draw cut pieces
-      plate.cuts.forEach((cut, cutIndex) => {
-        const x = padding + cut.x * scale;
-        const y = plateY + cut.y * scale;
-        const width = cut.length * scale;
-        const height = cut.width * scale;
+      // Rysowanie elementów (Formatek)
+      plate.cuts.forEach((cut) => {
+        const x = padding + (cut.x * scale);
+        const y = boardY + (cut.y * scale);
+        const w = cut.length * scale;
+        const h = cut.width * scale;
 
-        // Draw piece with color
         const colorIndex = parseInt(cut.pieceId.split('-')[0]) % colors.length;
         ctx.fillStyle = colors[colorIndex];
-        ctx.fillRect(x, y, width, height);
+        ctx.fillRect(x, y, w, h);
 
-        // Draw piece outline
-        ctx.strokeStyle = '#1f2937';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x, y, width, height);
+        ctx.strokeStyle = '#374151';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x, y, w, h);
 
-        // Draw dimensions on piece
-        if (width > 50 && height > 30) {
-          ctx.fillStyle = '#ffffff';
+        // Napisy na elemencie
+        if (w > 40 && h > 20) {
+          ctx.fillStyle = '#000000';
           ctx.font = 'bold 11px sans-serif';
           ctx.textAlign = 'center';
-          ctx.fillText(
-            `${cut.length} × ${cut.width}`,
-            x + width / 2,
-            y + height / 2
-          );
+          ctx.textBaseline = 'middle';
 
-          // Show rotation indicator if rotated
-          if (cut.rotated) {
-            ctx.font = '10px sans-serif';
-            ctx.fillText('↻', x + width / 2, y + height / 2 + 15);
-          }
-        }
+          const centerX = x + w / 2;
+          const centerY = y + h / 2;
 
-        // Draw saw kerf indicators (spacing between pieces)
-        ctx.strokeStyle = '#ef4444';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([3, 3]);
-        
-        // Show kerf margin around piece
-        const kerfMargin = config.sawWidth * scale;
-        if (kerfMargin > 1) {
-          ctx.strokeRect(
-            x - kerfMargin,
-            y - kerfMargin,
-            width + 2 * kerfMargin,
-            height + 2 * kerfMargin
-          );
+          ctx.fillText(`${cut.length}x${cut.width}`, centerX, centerY - 5);
+
+          let subText = cut.pieceId.split('-')[0];
+          if (cut.rotated) subText += ' ↻';
+
+          ctx.font = '10px sans-serif';
+          ctx.fillText(subText, centerX, centerY + 8);
         }
-        ctx.setLineDash([]);
       });
 
-      // Draw efficiency info
+      // --- TŁUMACZENIE 2: Statystyki ---
+      const statsY = boardY + plateVisualHeight + 25;
       const efficiency = (plate.usedArea / plate.totalArea) * 100;
-      ctx.fillStyle = '#374151';
-      ctx.font = '12px sans-serif';
+
+      ctx.fillStyle = '#4b5563';
+      ctx.font = '14px sans-serif';
       ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
       ctx.fillText(
-        `Efficiency: ${efficiency.toFixed(1)}% | Waste: ${(plate.totalArea - plate.usedArea).toFixed(0)} mm²`,
+        `Wydajność: ${efficiency.toFixed(1)}%  |  Odpady: ${(plate.totalArea - plate.usedArea).toFixed(0)} mm²`,
         padding,
-        plateY + plateVisualHeight + 35
+        statsY
       );
     });
 
-    // Draw legend
-    const legendY = padding + result.plates.length * plateSpacing + 20;
+    // --- TŁUMACZENIE 3: Legenda ---
+    const legendY = (result.plates.length * onePlateSectionHeight) + 40;
     ctx.fillStyle = '#374151';
-    ctx.font = '12px sans-serif';
+    ctx.font = 'bold 12px sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('Legend:', padding, legendY);
+    ctx.fillText('Legenda:  ↻ = Element obrócony', padding, legendY);
 
-    // Cut piece example
-    ctx.fillStyle = colors[0];
-    ctx.fillRect(padding + 60, legendY - 12, 40, 20);
-    ctx.strokeStyle = '#1f2937';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(padding + 60, legendY - 12, 40, 20);
-    ctx.fillStyle = '#374151';
-    ctx.fillText('Cut piece', padding + 110, legendY + 3);
-
-    // Kerf margin example
-    ctx.strokeStyle = '#ef4444';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([3, 3]);
-    ctx.strokeRect(padding + 220, legendY - 15, 46, 26);
-    ctx.setLineDash([]);
-    ctx.fillStyle = '#374151';
-    ctx.fillText('Saw kerf margin', padding + 275, legendY + 3);
-
-  }, [result, config]);
-
-  // Calculate canvas height based on number of plates
-  const maxPlateHeight = 300;
-  const plateSpacing = maxPlateHeight + 80;
-  const canvasHeight = 120 + result.plates.length * plateSpacing + 100;
+  }, [result, config, scale, onePlateSectionHeight, plateVisualWidth, plateVisualHeight]);
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
-      <h2 className="text-gray-900 font-medium mb-4">Cutting Layout</h2>
-      <div className="overflow-x-auto">
+    <div className="bg-white rounded-lg shadow-sm p-6 overflow-hidden">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-gray-900 font-medium">Schemat Rozkroju (2D)</h2>
+        <span className="text-sm text-gray-500">Skala: {(scale * 100).toFixed(1)}%</span>
+      </div>
+
+      <div className="overflow-x-auto flex justify-center bg-gray-50 border border-gray-200 rounded p-4">
         <canvas
           ref={canvasRef}
-          width={1000}
-          height={canvasHeight}
-          className="border border-gray-200 rounded"
+          width={canvasWidth}
+          height={totalCanvasHeight}
+          className="bg-white shadow-sm"
+          style={{ maxWidth: '100%', height: 'auto' }}
         />
       </div>
     </div>

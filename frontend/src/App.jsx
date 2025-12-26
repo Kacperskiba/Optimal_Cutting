@@ -7,16 +7,18 @@ import { ResultsPanel } from './components/ResultsPanel';
 import { optimizeCutsRequest } from './api/client';
 
 export default function App() {
+  // Domyślne wymiary np. dla standardowej płyty meblowej 2800x2070
   const [machineConfig, setMachineConfig] = useState({
-    sawWidth: 3,
-    plateLength: 2400,
-    plateWidth: 200,
+    sawWidth: 3,       // Rzaz
+    plateLength: 2800, // Długość płyty
+    plateWidth: 2070,
+    algorithm: 'guillotine',  // Szerokość płyty
   });
 
   const [pieces, setPieces] = useState([
-    { id: '1', length: 800, width: 200, quantity: 3 },
-    { id: '2', length: 600, width: 200, quantity: 2 },
-    { id: '3', length: 450, width: 200, quantity: 4 },
+    { id: '1', length: 800, width: 400, quantity: 3 },
+    { id: '2', length: 600, width: 300, quantity: 5 },
+    { id: '3', length: 1200, width: 500, quantity: 2 },
   ]);
 
   const [result, setResult] = useState(null);
@@ -32,7 +34,7 @@ export default function App() {
       const optimizationResult = await optimizeCutsRequest(pieces, machineConfig);
       setResult(optimizationResult);
     } catch (err) {
-      setError("Failed to connect to the server. Is FastAPI running?");
+      setError("Nie udało się połączyć z serwerem. Czy backend FastAPI jest uruchomiony?");
     } finally {
       setIsLoading(false);
     }
@@ -42,7 +44,7 @@ export default function App() {
     const newPiece = {
       id: Date.now().toString(),
       length: 0,
-      width: machineConfig.plateWidth,
+      width: 0,
       quantity: 1,
     };
     setPieces([...pieces, newPiece]);
@@ -60,14 +62,14 @@ export default function App() {
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
         <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Wood Plank Cutting Optimizer</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Optymalizator Rozkroju Płyt</h1>
           <p className="text-gray-600">
-            Configure your machine settings and required pieces to optimize cutting patterns
+            Skonfiguruj wymiary płyty matki i dodaj formatki do wycięcia, aby uzyskać optymalny schemat cięcia.
           </p>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Panel - Settings & Input */}
+          {/* Lewy panel - Ustawienia i Lista */}
           <div className="lg:col-span-1 space-y-6">
             <MachineSettings
               config={machineConfig}
@@ -90,10 +92,10 @@ export default function App() {
                 {isLoading ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    Optimizing...
+                    Obliczanie...
                   </>
                 ) : (
-                  'Optimize Cuts'
+                  'Oblicz Rozkrój'
                 )}
               </button>
 
@@ -105,7 +107,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Right Panel - Visualization & Results */}
+          {/* Prawy panel - Wizualizacja i Wyniki */}
           <div className="lg:col-span-2 space-y-6">
             {result ? (
               <>
@@ -117,8 +119,8 @@ export default function App() {
               </>
             ) : (
               <div className="bg-white rounded-lg shadow-sm p-12 text-center h-full flex flex-col justify-center items-center text-gray-500">
-                <p>Configure your settings and click "Optimize Cuts"</p>
-                <p className="text-sm mt-2">Results will be calculated by the FastAPI backend</p>
+                <p>Wprowadź dane i kliknij "Oblicz Rozkrój"</p>
+                <p className="text-sm mt-2">Wyniki zostaną wygenerowane przez serwer</p>
               </div>
             )}
           </div>

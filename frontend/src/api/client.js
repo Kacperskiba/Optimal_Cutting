@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:8000'; // Adres Twojego FastAPI
+const API_URL = 'http://localhost:8000';
 
 export const optimizeCutsRequest = async (pieces, machineConfig) => {
   try {
@@ -14,7 +14,12 @@ export const optimizeCutsRequest = async (pieces, machineConfig) => {
             width: Number(p.width),
             quantity: Number(p.quantity)
         })),
-        config: machineConfig
+        config: {
+            sawWidth: machineConfig.sawWidth,
+            plateLength: machineConfig.plateLength,
+            plateWidth: machineConfig.plateWidth,
+            algorithm: machineConfig.algorithm // <--- Dodajemy to pole
+        }
       }),
     });
 
