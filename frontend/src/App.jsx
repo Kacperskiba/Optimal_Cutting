@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, LayoutDashboard } from 'lucide-react';
 import { CuttingVisualizer } from './components/CuttingVisualizer';
 import { MachineSettings } from './components/MachineSettings';
 import { PieceInput } from './components/PieceInput';
@@ -7,125 +7,155 @@ import { ResultsPanel } from './components/ResultsPanel';
 import { optimizeCutsRequest } from './api/client';
 
 export default function App() {
-  // Domyślne wymiary np. dla standardowej płyty meblowej 2800x2070
+  // 1. Stan konfiguracji maszyny (wymiary, rzaz, algorytm, obracanie)
   const [machineConfig, setMachineConfig] = useState({
-    sawWidth: 3,       // Rzaz
-    plateLength: 2800, // Długość płyty
+    sawWidth: 3,
+    plateLength: 2800,
     plateWidth: 2070,
-    algorithm: 'guillotine',  // Szerokość płyty
+    algorithm: 'guillotine', // Domyślny algorytm
+    allowRotation: true,     // Domyślnie pozwalamy obracać (chyba że słoje)
   });
 
+  // 2. Stan listy formatek (przykładowe dane na start)
   const [pieces, setPieces] = useState([
     { id: '1', length: 800, width: 400, quantity: 3 },
     { id: '2', length: 600, width: 300, quantity: 5 },
-    { id: '3', length: 1200, width: 500, quantity: 2 },
   ]);
 
+  // 3. Stany wyników i UI
   const [result, setResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // --- KOMUNIKACJA Z API ---
   const handleOptimize = async () => {
     setIsLoading(true);
     setError(null);
-    setResult(null);
-
     try {
       const optimizationResult = await optimizeCutsRequest(pieces, machineConfig);
       setResult(optimizationResult);
     } catch (err) {
-      setError("Nie udało się połączyć z serwerem. Czy backend FastAPI jest uruchomiony?");
+      console.error(err);
+      setError("Błąd połączenia z serwerem. Upewnij się, że backend FastAPI działa.");
     } finally {
       setIsLoading(false);
     }
   };
 
+  // --- ZARZĄDZANIE FORMATKAMI ---
+
+  // Dodanie pustego wiersza
   const handleAddPiece = () => {
-    const newPiece = {
-      id: Date.now().toString(),
-      length: 0,
-      width: 0,
-      quantity: 1,
-    };
+    const newPiece = { id: Date.now().toString(), length: '', width: '', quantity: 1 };
     setPieces([...pieces, newPiece]);
   };
 
+  // Aktualizacja konkretnego pola
   const handleUpdatePiece = (id, updates) => {
     setPieces(pieces.map(p => p.id === id ? { ...p, ...updates } : p));
   };
 
+  // Usuwanie wiersza
   const handleRemovePiece = (id) => {
     setPieces(pieces.filter(p => p.id !== id));
   };
 
+  // IMPORT CSV (Kluczowa funkcja dla Twojego pytania)
+  const handleImportPieces = (newPieces) => {
+    // Dodajemy unikalne ID do zaimportowanych elementów, żeby React się nie gubił
+    const piecesWithIds = newPieces.map((p, index) => ({
+      ...p,
+      id: `imported-${Date.now()}-${index}`
+    }));
+
+    // Decyzja: Czy czyścimy stare? Tutaj dodajemy nowe do istniejących (append).
+    // Jeśli chcesz czyścić, użyj: setPieces(piecesWithIds);
+    setPieces([...pieces, ...piecesWithIds]);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-7xl mx-auto">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Optymalizator Rozkroju Płyt</h1>
-          <p className="text-gray-600">
-            Skonfiguruj wymiary płyty matki i dodaj formatki do wycięcia, aby uzyskać optymalny schemat cięcia.
-          </p>
-        </header>
+    <div className="flex h-screen bg-slate-100 overflow-hidden font-sans text-slate-900">
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Lewy panel - Ustawienia i Lista */}
-          <div className="lg:col-span-1 space-y-6">
-            <MachineSettings
-              config={machineConfig}
-              onChange={setMachineConfig}
-            />
+      {/* --- LEWY PANEL (SIDEBAR) --- */}
+      <aside className="w-[400px] bg-white border-r border-slate-200 flex flex-col h-full shadow-xl z-10">
 
-            <PieceInput
-              pieces={pieces}
-              onAdd={handleAddPiece}
-              onUpdate={handleUpdatePiece}
-              onRemove={handleRemovePiece}
-            />
-
-            <div className="space-y-3">
-              <button
-                onClick={handleOptimize}
-                disabled={isLoading}
-                className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Obliczanie...
-                  </>
-                ) : (
-                  'Oblicz Rozkrój'
-                )}
-              </button>
-
-              {error && (
-                <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm border border-red-200">
-                  {error}
-                </div>
-              )}
-            </div>
+        {/* Nagłówek Sidebara */}
+        <div className="p-5 border-b border-slate-100 flex items-center gap-3 bg-slate-50">
+          <div className="p-2 bg-blue-600 rounded-lg text-white">
+            <LayoutDashboard size={20} />
           </div>
-
-          {/* Prawy panel - Wizualizacja i Wyniki */}
-          <div className="lg:col-span-2 space-y-6">
-            {result ? (
-              <>
-                <ResultsPanel result={result} config={machineConfig} />
-                <CuttingVisualizer
-                  result={result}
-                  config={machineConfig}
-                />
-              </>
-            ) : (
-              <div className="bg-white rounded-lg shadow-sm p-12 text-center h-full flex flex-col justify-center items-center text-gray-500">
-                <p>Wprowadź dane i kliknij "Oblicz Rozkrój"</p>
-                <p className="text-sm mt-2">Wyniki zostaną wygenerowane przez serwer</p>
-              </div>
-            )}
+          <div>
+            <h1 className="font-bold text-lg leading-tight">Cut Optimizer</h1>
+            <p className="text-xs text-slate-500">Panel Sterowania</p>
           </div>
         </div>
-      </div>
+
+        {/* Przewijana zawartość formularzy */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-6 scrollbar-thin scrollbar-thumb-slate-300">
+
+          <MachineSettings
+            config={machineConfig}
+            onChange={setMachineConfig}
+          />
+
+          <hr className="border-slate-100" />
+
+          <PieceInput
+            pieces={pieces}
+            onAdd={handleAddPiece}
+            onUpdate={handleUpdatePiece}
+            onRemove={handleRemovePiece}
+            onImport={handleImportPieces} // <--- PRZEKAZANIE FUNKCJI IMPORTU
+          />
+
+        </div>
+
+        {/* Stopka Sidebara z przyciskiem akcji */}
+        <div className="p-5 border-t border-slate-200 bg-white">
+          {error && (
+            <div className="mb-3 text-xs text-red-600 bg-red-50 p-2 rounded border border-red-100">
+              {error}
+            </div>
+          )}
+
+          <button
+            onClick={handleOptimize}
+            disabled={isLoading}
+            className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-medium py-3 px-4 rounded-xl shadow-lg shadow-blue-200 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {isLoading ? (
+                <>
+                    <Loader2 className="animate-spin w-5 h-5" />
+                    Obliczanie...
+                </>
+            ) : (
+                'Oblicz Rozkrój'
+            )}
+          </button>
+        </div>
+      </aside>
+
+      {/* --- PRAWY PANEL (OBSZAR ROBOCZY) --- */}
+      <main className="flex-1 overflow-y-auto p-8 relative bg-slate-100">
+        <div className="max-w-6xl mx-auto space-y-6">
+
+          {!result ? (
+            // Stan pusty (przed obliczeniem)
+            <div className="h-[80vh] flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-300 rounded-2xl bg-slate-50/50">
+              <LayoutDashboard size={48} className="mb-4 opacity-20" />
+              <p className="text-lg font-medium">Wprowadź dane i kliknij "Oblicz Rozkrój"</p>
+              <p className="text-sm">Możesz też wgrać plik CSV z listą formatek</p>
+            </div>
+          ) : (
+            // Wyniki
+            <>
+              <ResultsPanel result={result} />
+              <CuttingVisualizer result={result} config={machineConfig} />
+            </>
+          )}
+
+        </div>
+      </main>
     </div>
   );
 }

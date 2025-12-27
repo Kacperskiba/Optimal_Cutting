@@ -8,17 +8,20 @@ export const optimizeCutsRequest = async (pieces, machineConfig) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        // Konwertujemy elementy na liczby w momencie wysyłki
         pieces: pieces.map(p => ({
             id: p.id,
-            length: Number(p.length),
-            width: Number(p.width),
-            quantity: Number(p.quantity)
+            length: Number(p.length) || 0, // Zabezpieczenie: jeśli puste to 0
+            width: Number(p.width) || 0,
+            quantity: Number(p.quantity) || 0
         })),
+        // Konwertujemy konfigurację maszyny na liczby
         config: {
-            sawWidth: machineConfig.sawWidth,
-            plateLength: machineConfig.plateLength,
-            plateWidth: machineConfig.plateWidth,
-            algorithm: machineConfig.algorithm // <--- Dodajemy to pole
+            sawWidth: Number(machineConfig.sawWidth) || 0,
+            plateLength: Number(machineConfig.plateLength) || 0,
+            plateWidth: Number(machineConfig.plateWidth) || 0,
+            algorithm: machineConfig.algorithm,
+            allowRotation: machineConfig.allowRotation
         }
       }),
     });

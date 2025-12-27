@@ -1,46 +1,54 @@
-import { BarChart3, TrendingUp, Scissors, Trash2 } from 'lucide-react';
+import { Box, Percent, Scissors, Recycle } from 'lucide-react';
 
-export function ResultsPanel({ result, config }) {
+export function ResultsPanel({ result }) {
+  // Komponent pomocniczy dla pojedynczej karty
+  const StatCard = ({ icon: Icon, label, value, subtext, colorClass, bgClass }) => (
+    <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">{label}</p>
+          <p className={`text-2xl font-bold ${colorClass}`}>{value}</p>
+          {subtext && <p className="text-xs text-slate-400 mt-1">{subtext}</p>}
+        </div>
+        <div className={`p-2 rounded-lg ${bgClass}`}>
+          <Icon className={`w-5 h-5 ${colorClass}`} />
+        </div>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
-      <div className="flex items-center gap-2 mb-4">
-        <BarChart3 className="w-5 h-5 text-gray-700" />
-        <h2 className="text-gray-900 font-medium">Wyniki Optymalizacji</h2>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-blue-50 rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <BarChart3 className="w-4 h-4 text-blue-600" />
-            <span className="text-blue-900 text-sm font-medium">Potrzebne Płyty</span>
-          </div>
-          <div className="text-2xl font-bold text-blue-900">{result.totalPlates}</div>
-        </div>
-
-        <div className="bg-green-50 rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="w-4 h-4 text-green-600" />
-            <span className="text-green-900 text-sm font-medium">Wydajność</span>
-          </div>
-          <div className="text-2xl font-bold text-green-900">{result.efficiency.toFixed(1)}%</div>
-        </div>
-
-        <div className="bg-purple-50 rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Scissors className="w-4 h-4 text-purple-600" />
-            <span className="text-purple-900 text-sm font-medium">Ułożone Elem.</span>
-          </div>
-          <div className="text-2xl font-bold text-purple-900">{result.totalCuts}</div>
-        </div>
-
-        <div className="bg-orange-50 rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Trash2 className="w-4 h-4 text-orange-600" />
-            <span className="text-orange-900 text-sm font-medium">Odpady Łącznie</span>
-          </div>
-          <div className="text-2xl font-bold text-orange-900">{result.totalWaste.toFixed(0)} mm²</div>
-        </div>
-      </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <StatCard
+        icon={Box}
+        label="Potrzebne Płyty"
+        value={result.totalPlates}
+        colorClass="text-blue-600"
+        bgClass="bg-blue-50"
+      />
+      <StatCard
+        icon={Percent}
+        label="Wydajność"
+        value={`${result.efficiency.toFixed(1)}%`}
+        colorClass="text-emerald-600"
+        bgClass="bg-emerald-50"
+      />
+      <StatCard
+        icon={Scissors}
+        label="Liczba Cięć"
+        value={result.totalCuts}
+        subtext="Elementów do wycięcia"
+        colorClass="text-violet-600"
+        bgClass="bg-violet-50"
+      />
+      <StatCard
+        icon={Recycle}
+        label="Odpady"
+        value={`${(result.totalWaste / 1000000).toFixed(2)} m²`}
+        subtext="Powierzchnia strat"
+        colorClass="text-amber-600"
+        bgClass="bg-amber-50"
+      />
     </div>
   );
 }

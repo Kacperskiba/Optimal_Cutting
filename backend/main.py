@@ -4,10 +4,9 @@ from pydantic import BaseModel
 from typing import List
 
 import rectpack.skyline as skyline
-import rectpack.maxrects as maxrects
+from rectpack.maxrects import MaxRectsBl, MaxRectsBssf
 from rectpack import newPacker, PackingMode
 import rectpack.guillotine as guillotine
-import rectpack.packer as packer_module  # Tu są algorytmy MaxRects i Skyline
 
 app = FastAPI()
 
@@ -31,8 +30,8 @@ class ConfigRequest(BaseModel):
     sawWidth: float
     plateLength: float
     plateWidth: float
-    algorithm: str = "guillotine"  # Nowe pole: domyślnie gilotyna
-
+    algorithm: str = "guillotine"
+    allowRotation: bool = True
 
 class OptimizeRequest(BaseModel):
     pieces: List[PieceRequest]
@@ -77,17 +76,22 @@ async def optimize_cuts(request: OptimizeRequest):
 
     if algo_choice == "nesting":
         # MaxRectsBl (Bottom Left) - "Tetris", bardzo ciasne upakowanie (CNC/Laser)
-        selected_algo = maxrects.MaxRectsBl
+        selected_algo = MaxRectsBl
     elif algo_choice == "simple":
         # SkylineBl (Bottom Left) - Układanie "półkowe" (warstwami), proste i czytelne
         selected_algo = skyline.SkylineBl
+    elif algo_choice == "strips":
+        # --- NOWOŚĆ: Gilotyna Pasy (Long Axis Split) ---
+        # Blsf = Best Long Side Fit (Dopasuj do długiego boku)
+        # Las = Long Axis Split (Tnij długie pasy)
+        selected_algo = guillotine.GuillotineBlsfLas
     else:
         # Domyślnie: Gilotyna (GuillotineBSSFSas) - Najlepsza na piłę formatową
         selected_algo = guillotine.GuillotineBssfSas
 
     packer = newPacker(
         mode=PackingMode.Offline,
-        rotation=True,
+        rotation=request.config.allowRotation,
         pack_algo=selected_algo
     )
 
