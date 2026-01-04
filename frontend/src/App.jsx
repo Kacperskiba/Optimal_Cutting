@@ -59,7 +59,11 @@ export default function App() {
   const handleRemovePiece = (id) => {
     setPieces(pieces.filter(p => p.id !== id));
   };
-
+  const handleClearPieces = () => {
+    if (confirm("Czy na pewno chcesz usunąć wszystkie formatki?")) {
+      setPieces([]);
+    }
+  };
   // IMPORT CSV (Kluczowa funkcja dla Twojego pytania)
   const handleImportPieces = (newPieces) => {
     // Dodajemy unikalne ID do zaimportowanych elementów, żeby React się nie gubił
@@ -105,7 +109,8 @@ export default function App() {
             onAdd={handleAddPiece}
             onUpdate={handleUpdatePiece}
             onRemove={handleRemovePiece}
-            onImport={handleImportPieces} // <--- PRZEKAZANIE FUNKCJI IMPORTU
+            onImport={handleImportPieces}
+            onClear={handleClearPieces}
           />
 
         </div>

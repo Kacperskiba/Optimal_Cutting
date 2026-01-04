@@ -1,66 +1,85 @@
-import { Plus, Trash2, Layers, Upload, FileSpreadsheet } from 'lucide-react';
+import { Plus, Trash2, Layers, Upload, FileSpreadsheet, Eraser } from 'lucide-react';
 import { useRef } from 'react';
 
-export function PieceInput({ pieces, onAdd, onUpdate, onRemove, onImport }) {
+export function PieceInput({ pieces, onAdd, onUpdate, onRemove, onImport, onClear }) {
   const fileInputRef = useRef(null);
 
-  // Funkcja obsługująca wgranie pliku
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      const text = event.target.result;
-      parseCSV(text);
+      parseCSV(event.target.result);
     };
     reader.readAsText(file);
-
-    // Reset inputu, żeby można było wgrać ten sam plik ponownie
     e.target.value = '';
   };
 
-  // Parser CSV (obsługuje przecinek i średnik)
+  // Ulepszony parser (obsługuje zwykły CSV i ten produkcyjny)
   const parseCSV = (text) => {
-    const lines = text.split(/\r?\n/); // Podział na linie
+    const lines = text.split(/\r?\n/);
     const newPieces = [];
 
-    lines.forEach((line) => {
-      if (!line.trim()) return; // Pomiń puste
+    let isProductionFormat = false;
+    if (lines[0] && (lines[0].includes('Indeks') || lines[0].includes('Długość;Szerokość;Gr'))) {
+        isProductionFormat = true;
+    }
 
-      // Próba podziału średnikiem (Excel PL) lub przecinkiem (CSV standard)
+    lines.forEach((line, index) => {
+      if (!line.trim()) return;
+      if (isProductionFormat && index === 0) return;
+
       let parts = line.includes(';') ? line.split(';') : line.split(',');
 
-      // Jeśli mamy nagłówek "Długość;Szerokość...", pomijamy go
-      const firstVal = parseFloat(parts[0]);
-      if (isNaN(firstVal)) return;
+      if (isProductionFormat) {
+          if (parts.length >= 7) {
+              const len = parseFloat(parts[3].replace(',', '.'));
+              const wid = parseFloat(parts[4].replace(',', '.'));
+              const qty = parseInt(parts[6]);
+              const name = parts[1];
 
-      if (parts.length >= 2) {
-        newPieces.push({
-          length: parseFloat(parts[0]) || 0,
-          width: parseFloat(parts[1]) || 0,
-          quantity: parseInt(parts[2]) || 1, // Domyślnie 1 sztuka
-        });
+              if (!isNaN(len) && !isNaN(wid) && !isNaN(qty)) {
+                  newPieces.push({
+                      id: name ? `${name} (${index})` : `import-${index}`,
+                      length: len,
+                      width: wid,
+                      quantity: qty
+                  });
+              }
+          }
+      } else {
+          // Stary format
+          const firstVal = parseFloat(parts[0]);
+          if (isNaN(firstVal)) return;
+
+          if (parts.length >= 2) {
+            newPieces.push({
+              length: parseFloat(parts[0].replace(',', '.')) || 0,
+              width: parseFloat(parts[1].replace(',', '.')) || 0,
+              quantity: parseInt(parts[2]) || 1,
+              id: `manual-${Date.now()}-${index}`
+            });
+          }
       }
     });
 
     if (newPieces.length > 0) {
       onImport(newPieces);
     } else {
-      alert("Nie znaleziono poprawnych danych w pliku CSV. Format: Długość;Szerokość;Ilość");
+      alert("Nie rozpoznano danych. Sprawdź format pliku.");
     }
   };
 
   return (
     <section>
-      <div className="flex items-center justify-between mb-4 text-slate-800">
+      <div className="flex flex-wrap items-center justify-between mb-4 gap-2 text-slate-800">
         <div className="flex items-center gap-2">
           <Layers className="w-4 h-4" />
           <h2 className="font-semibold text-sm uppercase tracking-wider">Formatki ({pieces.length})</h2>
         </div>
 
         <div className="flex gap-2">
-            {/* Ukryty input pliku */}
             <input
                 type="file"
                 ref={fileInputRef}
@@ -69,16 +88,24 @@ export function PieceInput({ pieces, onAdd, onUpdate, onRemove, onImport }) {
                 onChange={handleFileUpload}
             />
 
-            {/* Przycisk Importu */}
+            {/* Przycisk WYCZYŚĆ WSZYSTKO */}
+            {pieces.length > 0 && (
+                <button
+                    onClick={onClear}
+                    className="text-xs bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 px-2 py-1 rounded font-medium transition-colors flex items-center gap-1"
+                    title="Usuń wszystkie formatki"
+                >
+                    <Eraser size={14} /> Wyczyść
+                </button>
+            )}
+
             <button
             onClick={() => fileInputRef.current.click()}
             className="text-xs bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-2 py-1 rounded font-medium transition-colors flex items-center gap-1"
-            title="Importuj CSV (Długość;Szerokość;Ilość)"
             >
-            <FileSpreadsheet size={14} /> Import CSV
+            <FileSpreadsheet size={14} /> Import
             </button>
 
-            {/* Przycisk Dodaj Ręcznie */}
             <button
             onClick={onAdd}
             className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded font-medium transition-colors flex items-center gap-1"
@@ -89,7 +116,6 @@ export function PieceInput({ pieces, onAdd, onUpdate, onRemove, onImport }) {
       </div>
 
       <div className="space-y-2">
-        {/* Nagłówek Tabeli */}
         {pieces.length > 0 && (
           <div className="grid grid-cols-12 gap-2 text-[10px] uppercase font-bold text-slate-400 px-1">
             <div className="col-span-4">Długość</div>
@@ -111,11 +137,10 @@ export function PieceInput({ pieces, onAdd, onUpdate, onRemove, onImport }) {
                    <Upload size={14}/> Wgraj plik
                 </button>
             </div>
-            <p className="text-[10px] text-slate-400 mt-2">Format pliku: Długość ; Szerokość ; Ilość</p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {pieces.map((piece, index) => (
+          <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-200">
+            {pieces.map((piece) => (
               <div key={piece.id} className="grid grid-cols-12 gap-2 items-center group animate-in fade-in slide-in-from-left-2 duration-300">
                 <div className="col-span-4 relative">
                     <input
@@ -125,7 +150,6 @@ export function PieceInput({ pieces, onAdd, onUpdate, onRemove, onImport }) {
                       onChange={(e) => onUpdate(piece.id, { length: e.target.value })}
                       className="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
                     />
-                    <span className="absolute right-2 top-1.5 text-xs text-slate-300 pointer-events-none">mm</span>
                 </div>
                 <div className="col-span-4 relative">
                     <input
@@ -157,15 +181,6 @@ export function PieceInput({ pieces, onAdd, onUpdate, onRemove, onImport }) {
               </div>
             ))}
           </div>
-        )}
-
-        {pieces.length > 0 && (
-            <button
-                onClick={onAdd}
-                className="w-full py-2 border border-dashed border-slate-300 rounded text-slate-500 text-xs hover:bg-slate-50 hover:border-slate-400 transition-all flex items-center justify-center gap-1 mt-2"
-            >
-                <Plus size={14} /> Dodaj kolejny wiersz
-            </button>
         )}
       </div>
     </section>
