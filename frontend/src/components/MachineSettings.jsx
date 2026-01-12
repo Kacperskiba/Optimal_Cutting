@@ -1,8 +1,7 @@
 import { Settings, Cpu, Ruler, Disc, RotateCw } from 'lucide-react';
 
 export function MachineSettings({ config, onChange }) {
-  // ZMIANA: Nie wymuszamy parseFloat tutaj. Przekazujemy "surową" wartość.
-  // Jeśli wartość to pusty string, przekazujemy pusty string.
+
   const handleChange = (field, value) => {
     onChange({ ...config, [field]: value === '' ? '' : value });
   };
@@ -15,11 +14,8 @@ export function MachineSettings({ config, onChange }) {
       </div>
 
       <div className="space-y-4">
-        {/* ... (Sekcja przełącznika obrotu i wyboru algorytmu BEZ ZMIAN) ... */}
 
-        {/* SKOPIUJ TYLKO TO CO PONIŻEJ JEŚLI NIE CHCESZ PRZEPISYWAĆ CAŁOŚCI */}
         <div className={`p-3 rounded-lg border transition-colors ${config.allowRotation ? 'bg-blue-50 border-blue-200' : 'bg-amber-50 border-amber-200'}`}>
-             {/* ... (kod przełącznika bez zmian) ... */}
              <div className="flex items-center justify-between mb-2">
                 <label className="text-xs font-bold text-slate-600 flex items-center gap-1">
                   <RotateCw size={14} /> Obracanie (Słoje)
@@ -83,7 +79,30 @@ export function MachineSettings({ config, onChange }) {
             </div>
           </div>
         </div>
-
+        {/* --- NOWA SEKCJA: Parametry Czasu --- */}
+        <div className="pt-2 border-t border-slate-100 mt-2">
+            <h3 className="text-[10px] font-bold text-slate-400 uppercase mb-2">Estymacja Czasu</h3>
+            <div className="grid grid-cols-2 gap-3">
+                <div>
+                    <label className="text-xs font-bold text-slate-500 mb-1 block">Prędkość (m/min)</label>
+                    <input
+                        type="number"
+                        value={config.cuttingSpeed || 20}
+                        onChange={(e) => handleChange('cuttingSpeed', e.target.value)}
+                        className="w-full px-2 py-1.5 border border-slate-300 rounded text-sm outline-none focus:border-blue-500"
+                    />
+                </div>
+                <div>
+                    <label className="text-xs font-bold text-slate-500 mb-1 block">Manipulacja (s)</label>
+                    <input
+                        type="number"
+                        value={config.handlingTime || 5}
+                        onChange={(e) => handleChange('handlingTime', e.target.value)}
+                        className="w-full px-2 py-1.5 border border-slate-300 rounded text-sm outline-none focus:border-blue-500"
+                    />
+                </div>
+            </div>
+        </div>
         {/* Rzaz */}
         <div>
           <label className="text-xs font-bold text-slate-500 mb-1 block">Grubość cięcia (mm)</label>

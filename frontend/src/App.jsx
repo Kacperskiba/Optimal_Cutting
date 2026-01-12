@@ -12,8 +12,12 @@ export default function App() {
     sawWidth: 3,
     plateLength: 2800,
     plateWidth: 2070,
-    algorithm: 'guillotine', // Domyślny algorytm
-    allowRotation: true,     // Domyślnie pozwalamy obracać (chyba że słoje)
+    algorithm: 'guillotine',
+    allowRotation: true,
+    cuttingSpeed: 20,
+    handlingTime: 5,
+      loadingTime: 60
+
   });
 
   // 2. Stan listy formatek (przykładowe dane na start)

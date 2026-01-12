@@ -13,6 +13,9 @@ class ConfigRequest(BaseModel):
     plateWidth: float
     algorithm: str = "guillotine"
     allowRotation: bool = True
+    cuttingSpeed: int = 20  # m/min (prędkość wózka piły)
+    handlingTime: int = 5  # sekundy (czas na obrót/przesuw)
+    loadingTime: int = 60
 
 class OptimizeRequest(BaseModel):
     pieces: List[PieceRequest]
@@ -34,10 +37,12 @@ class PlateResponse(BaseModel):
     totalArea: float
     usedArea: float
     cuts: List[CutResponse]
+    quantity: int = 1
 
 class OptimizationResult(BaseModel):
     totalPlates: int
     efficiency: float
     totalCuts: int
     totalWaste: float
+    estimatedTime: str = "0m"
     plates: List[PlateResponse]

@@ -39,11 +39,28 @@ export function CuttingVisualizer({ result, config }) {
     result.plates.forEach((plate, plateIndex) => {
       const startY = padding + (plateIndex * onePlateSectionHeight);
 
-      // Nagłówek
+      // Zmieniamy nagłówek
       ctx.fillStyle = '#1e293b';
       ctx.font = 'bold 20px sans-serif';
       ctx.textAlign = 'left';
-      ctx.fillText(`Płyta nr ${plate.plateNumber}`, padding, startY + 15);
+
+      // NOWE: Wyświetlanie ilości pakietowej
+      const title = `Płyta #${plate.plateNumber}`;
+      const subtitle = plate.quantity > 1
+          ? `(Powtórz x${plate.quantity} szt.)`
+          : '(Pojedyncza)';
+
+      ctx.fillText(title, padding, startY + 15);
+
+      // Rysujemy subtitle (np. na czerwono lub niebiesko jeśli to pakiet)
+      if (plate.quantity > 1) {
+          ctx.fillStyle = '#2563eb'; // Niebieski dla pakietów
+          ctx.font = 'bold 16px sans-serif';
+      } else {
+          ctx.fillStyle = '#94a3b8'; // Szary dla pojedynczych
+          ctx.font = '14px sans-serif';
+      }
+      ctx.fillText(subtitle, padding + 120, startY + 15);
 
       // Płyta matka
       const boardY = startY + headerHeight;

@@ -73,33 +73,23 @@ class OptimizerService:
         # 5. Uruchomienie obliczeń
         packer.pack()
 
-        # 6. Przetwarzanie wyników
-        output_plates = []
-        total_cuts_count = 0
+        raw_plates = []  # Tymczasowa lista na wszystkie wygenerowane układy
 
+        # 1. Wyciągamy dane z rectpack (tak jak wcześniej)
         for bin_idx, abin in enumerate(packer):
             cuts_on_plate = []
             used_area_on_plate = 0
 
+            # Obliczamy długość cięcia dla tej konkretnej płyty (do czasu)
+            cuts_length_mm = 0
+
             for rect in abin:
-                # rid to nasze piece_uid
                 if rect.rid in original_pieces:
                     orig = original_pieces[rect.rid]
-
-                    # Odejmujemy rzaz, żeby wrócić do wymiaru netto
                     actual_w = rect.width - saw_kerf
                     actual_l = rect.height - saw_kerf
 
-                    # Wykrywanie obrotu
-                    # Sprawdzamy czy szerokość po cięciu pasuje do oryginalnej długości
-                    is_rotated = False
-                    if abs(actual_w - orig["length"]) < 0.1:
-                        is_rotated = True
-
-                    # UWAGA: Rectpack zwraca x,y od dołu-lewej.
-                    # Frontend rysuje od góry-lewej (canvas).
-                    # Zwykle nie trzeba tego zmieniać, jeśli wizualizacja to obsługuje,
-                    # ale warto pamiętać. Tutaj zwracamy surowe dane.
+                    is_rotated = abs(actual_w - orig["length"]) < 0.1
 
                     cuts_on_plate.append(CutResponse(
                         id=str(rect.rid),
@@ -110,31 +100,103 @@ class OptimizerService:
                         y=rect.y,
                         rotated=is_rotated
                     ))
-
                     used_area_on_plate += (actual_w * actual_l)
-                    total_cuts_count += 1
 
-            # Jeśli na płycie coś jest, dodajemy ją do wyniku
+                    # Do estymacji czasu: dodajemy obwód/krawędzie cięcia
+                    # Uproszczenie: każde cięcie to długość + szerokość elementu
+                    cuts_length_mm += (actual_w + actual_l)
+
             if cuts_on_plate:
-                output_plates.append(PlateResponse(
-                    plateNumber=bin_idx + 1,
+                # Sortujemy cięcia, żeby móc porównać układy (ważne dla pakietowania!)
+                cuts_on_plate.sort(key=lambda c: (c.x, c.y, c.length))
+
+                raw_plates.append({
+                    "cuts": cuts_on_plate,
+                    "usedArea": used_area_on_plate,
+                    "cutsLength": cuts_length_mm
+                })
+
+        # 2. PAKIETOWANIE (Grupowanie identycznych płyt)
+        grouped_plates = []
+
+        # Prosta logika: tworzymy "podpis" (string) dla każdej płyty i grupujemy
+        # Podpis to np: "x10-y20-L500-W300|x50-y20..."
+        seen_layouts = {}  # Klucz: podpis, Wartość: index w grouped_plates
+
+        for p in raw_plates:
+            # Tworzymy unikalny klucz układu
+            layout_signature = "|".join([f"{c.x:.1f}-{c.y:.1f}-{c.length:.1f}-{c.width:.1f}" for c in p['cuts']])
+
+            if layout_signature in seen_layouts:
+                # Jeśli już widzieliśmy ten układ, zwiększamy licznik
+                idx = seen_layouts[layout_signature]
+                grouped_plates[idx].quantity += 1
+            else:
+                # Nowy układ
+                new_plate = PlateResponse(
+                    plateNumber=len(grouped_plates) + 1,
                     totalArea=plate_len * plate_wid,
-                    usedArea=used_area_on_plate,
-                    cuts=cuts_on_plate
-                ))
+                    usedArea=p['usedArea'],
+                    cuts=p['cuts'],
+                    quantity=1  # Startujemy od 1
+                )
+                grouped_plates.append(new_plate)
+                seen_layouts[layout_signature] = len(grouped_plates) - 1
 
-        # Statystyki końcowe
-        total_area_all = sum(p.totalArea for p in output_plates)
-        total_used_all = sum(p.usedArea for p in output_plates)
+        # 3. OBLICZANIE CZASU
+        # Dane z configu
+        speed_m_min = request.config.cuttingSpeed
+        handling_sec = request.config.handlingTime
+        loading_sec = request.config.loadingTime
 
+        total_cuts_count = 0
+        total_used_area = 0
+        total_time_seconds = 0
+
+        for plate in grouped_plates:
+            # Statystyki ogólne
+            count = plate.quantity
+            cuts_count = len(plate.cuts)
+
+            total_cuts_count += (cuts_count * count)
+            total_used_area += (plate.usedArea * count)
+
+            # --- ESTYMACJA CZASU DLA TEJ GRUPY PŁYT ---
+
+            # A. Czas załadunku (raz na pakiet lub raz na płytę - załóżmy, że raz na płytę)
+            time_load = count * loading_sec
+
+            # B. Czas cięcia (długość drogi piły)
+            # Przybliżenie: suma obwodów elementów / prędkość
+            # (W realnej pile dochodzą powroty, więc mnożymy x1.2 dla bezpieczeństwa)
+            cuts_len_meters = sum([(c.length + c.width) / 1000 for c in plate.cuts])
+            time_cut_min = (cuts_len_meters / speed_m_min) * count * 1.2
+            time_cut_sec = time_cut_min * 60
+
+            # C. Czas manipulacji (ilość elementów * czas na element)
+            time_handle = (cuts_count * handling_sec) * count
+
+            total_time_seconds += (time_load + time_cut_sec + time_handle)
+
+        # Formatowanie czasu (np. 1h 25m)
+        hours = int(total_time_seconds // 3600)
+        minutes = int((total_time_seconds % 3600) // 60)
+        time_str = f"{minutes}m"
+        if hours > 0:
+            time_str = f"{hours}h {minutes}m"
+
+        # Wydajność
+        total_plates_count = sum(p.quantity for p in grouped_plates)
+        total_area_all = total_plates_count * (plate_len * plate_wid)
         efficiency = 0
         if total_area_all > 0:
-            efficiency = (total_used_all / total_area_all) * 100
+            efficiency = (total_used_area / total_area_all) * 100
 
         return OptimizationResult(
-            totalPlates=len(output_plates),
+            totalPlates=total_plates_count,
             efficiency=round(efficiency, 2),
             totalCuts=total_cuts_count,
-            totalWaste=total_area_all - total_used_all,
-            plates=output_plates
+            totalWaste=total_area_all - total_used_area,
+            estimatedTime=time_str,
+            plates=grouped_plates
         )

@@ -1,4 +1,4 @@
-import { Box, Percent, Scissors, Recycle } from 'lucide-react';
+import { Box, Percent, Scissors, Recycle, Clock } from 'lucide-react';
 
 export function ResultsPanel({ result }) {
   // Komponent pomocniczy dla pojedynczej karty
@@ -49,6 +49,15 @@ export function ResultsPanel({ result }) {
         colorClass="text-amber-600"
         bgClass="bg-amber-50"
       />
+        <StatCard
+        icon={Clock}
+        label="Szacowany Czas"
+        value={result.estimatedTime}
+        subtext="Cięcie + Obsługa"
+        colorClass="text-pink-600"
+        bgClass="bg-pink-50"
+      />
     </div>
+
   );
 }

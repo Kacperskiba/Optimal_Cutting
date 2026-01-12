@@ -21,7 +21,11 @@ export const optimizeCutsRequest = async (pieces, machineConfig) => {
             plateLength: Number(machineConfig.plateLength) || 0,
             plateWidth: Number(machineConfig.plateWidth) || 0,
             algorithm: machineConfig.algorithm,
-            allowRotation: machineConfig.allowRotation
+            allowRotation: machineConfig.allowRotation,
+
+            cuttingSpeed: Number(machineConfig.cuttingSpeed) || 20,
+            handlingTime: Number(machineConfig.handlingTime) || 5,
+            loadingTime: Number(machineConfig.loadingTime) || 60
         }
       }),
     });
