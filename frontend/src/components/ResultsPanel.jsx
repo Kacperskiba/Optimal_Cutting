@@ -1,7 +1,6 @@
-import { Box, Percent, Scissors, Recycle, Clock } from 'lucide-react';
+import { Box, Percent, Scissors, Recycle, Clock} from 'lucide-react';
 
 export function ResultsPanel({ result }) {
-  // Komponent pomocniczy dla pojedynczej karty
   const StatCard = ({ icon: Icon, label, value, subtext, colorClass, bgClass }) => (
     <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between">
@@ -57,6 +56,7 @@ export function ResultsPanel({ result }) {
         colorClass="text-pink-600"
         bgClass="bg-pink-50"
       />
+
     </div>
 
   );

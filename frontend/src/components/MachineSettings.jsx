@@ -50,7 +50,6 @@ export function MachineSettings({ config, onChange }) {
           </select>
         </div>
 
-        {/* Wymiary Płyty */}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="text-xs font-bold text-slate-500 mb-1 block">Dł. Płyty (mm) <span className="text-amber-500 font-normal">{!config.allowRotation && "↕ Słój"}</span></label>
@@ -58,7 +57,6 @@ export function MachineSettings({ config, onChange }) {
               <input
                 type="number"
                 value={config.plateLength}
-                // ZMIANA: e.target.value zamiast parseFloat
                 onChange={(e) => handleChange('plateLength', e.target.value)}
                 className="w-full pl-8 pr-2 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
               />
@@ -71,7 +69,6 @@ export function MachineSettings({ config, onChange }) {
               <input
                 type="number"
                 value={config.plateWidth}
-                // ZMIANA
                 onChange={(e) => handleChange('plateWidth', e.target.value)}
                 className="w-full pl-8 pr-2 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
               />
@@ -79,7 +76,6 @@ export function MachineSettings({ config, onChange }) {
             </div>
           </div>
         </div>
-        {/* --- NOWA SEKCJA: Parametry Czasu --- */}
         <div className="pt-2 border-t border-slate-100 mt-2">
             <h3 className="text-[10px] font-bold text-slate-400 uppercase mb-2">Estymacja Czasu</h3>
             <div className="grid grid-cols-2 gap-3">
@@ -103,14 +99,12 @@ export function MachineSettings({ config, onChange }) {
                 </div>
             </div>
         </div>
-        {/* Rzaz */}
         <div>
           <label className="text-xs font-bold text-slate-500 mb-1 block">Grubość cięcia (mm)</label>
           <div className="relative">
             <input
               type="number"
               value={config.sawWidth}
-              // ZMIANA: Pozwala na wpisanie "4." bez ucinania kropki
               onChange={(e) => handleChange('sawWidth', e.target.value)}
               className="w-full pl-8 pr-2 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
             />

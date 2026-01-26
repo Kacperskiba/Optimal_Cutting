@@ -16,58 +16,69 @@ export function PieceInput({ pieces, onAdd, onUpdate, onRemove, onImport, onClea
     e.target.value = '';
   };
 
-  // Ulepszony parser (obsługuje zwykły CSV i ten produkcyjny)
+  const getRandomColor = () => {
+    const hue = Math.floor(Math.random() * 360);
+    return `hsl(${hue}, 70%, 80%)`;
+  };
+
   const parseCSV = (text) => {
     const lines = text.split(/\r?\n/);
     const newPieces = [];
 
+    const firstLine = lines[0] || "";
+    const delimiter = firstLine.includes(';') ? ';' : ',';
+
+
     let isProductionFormat = false;
-    if (lines[0] && (lines[0].includes('Indeks') || lines[0].includes('Długość;Szerokość;Gr'))) {
+    if (firstLine.includes('Indeks') || firstLine.includes('Nazwa') || firstLine.includes('Długość')) {
         isProductionFormat = true;
     }
 
     lines.forEach((line, index) => {
       if (!line.trim()) return;
+
       if (isProductionFormat && index === 0) return;
 
-      let parts = line.includes(';') ? line.split(';') : line.split(',');
+      const parts = line.split(delimiter);
 
       if (isProductionFormat) {
-          if (parts.length >= 7) {
-              const len = parseFloat(parts[3].replace(',', '.'));
-              const wid = parseFloat(parts[4].replace(',', '.'));
+
+          if (parts.length >= 5) {
+              const len = parseFloat(parts[3]?.replace(',', '.'));
+              const wid = parseFloat(parts[4]?.replace(',', '.'));
               const qty = parseInt(parts[6]);
-              const name = parts[1];
+              let name = parts[1]?.trim();
+              if (!name) name = parts[0]?.trim();
 
               if (!isNaN(len) && !isNaN(wid) && !isNaN(qty)) {
                   newPieces.push({
-                      id: name ? `${name} (${index})` : `import-${index}`,
+                      // np. "BOK_GARDEROBY (1)"
+                      id: `${name} (${index})`,
                       length: len,
                       width: wid,
-                      quantity: qty
+                      quantity: qty,
+                      color: getRandomColor()
                   });
               }
           }
       } else {
-          // Stary format
-          const firstVal = parseFloat(parts[0]);
-          if (isNaN(firstVal)) return;
+          const firstVal = parseFloat(parts[0]?.replace(',', '.'));
 
-          if (parts.length >= 2) {
+          if (!isNaN(firstVal) && parts.length >= 2) {
             newPieces.push({
-              length: parseFloat(parts[0].replace(',', '.')) || 0,
-              width: parseFloat(parts[1].replace(',', '.')) || 0,
+              length: firstVal,
+              width: parseFloat(parts[1]?.replace(',', '.')) || 0,
               quantity: parseInt(parts[2]) || 1,
-              id: `manual-${Date.now()}-${index}`
+              id: `Element-${index}`,
+              color: getRandomColor()
             });
           }
       }
     });
-
     if (newPieces.length > 0) {
       onImport(newPieces);
     } else {
-      alert("Nie rozpoznano danych. Sprawdź format pliku.");
+      alert("Nie udało się odczytać formatu pliku. Upewnij się, że to CSV rozdzielany średnikami.");
     }
   };
 
@@ -88,7 +99,6 @@ export function PieceInput({ pieces, onAdd, onUpdate, onRemove, onImport, onClea
                 onChange={handleFileUpload}
             />
 
-            {/* Przycisk WYCZYŚĆ WSZYSTKO */}
             {pieces.length > 0 && (
                 <button
                     onClick={onClear}

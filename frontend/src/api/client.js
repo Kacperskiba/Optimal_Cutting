@@ -8,14 +8,12 @@ export const optimizeCutsRequest = async (pieces, machineConfig) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        // Konwertujemy elementy na liczby w momencie wysyłki
         pieces: pieces.map(p => ({
             id: p.id,
-            length: Number(p.length) || 0, // Zabezpieczenie: jeśli puste to 0
+            length: Number(p.length) || 0,
             width: Number(p.width) || 0,
             quantity: Number(p.quantity) || 0
         })),
-        // Konwertujemy konfigurację maszyny na liczby
         config: {
             sawWidth: Number(machineConfig.sawWidth) || 0,
             plateLength: Number(machineConfig.plateLength) || 0,

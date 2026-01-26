@@ -7,10 +7,9 @@ from app.services.optimizer import OptimizerService
 
 app = FastAPI(title="Cutting Optimization API")
 
-# Konfiguracja CORS (pozwala na komunikację z React/Vite)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # W produkcji warto zmienić "*" na konkretny adres frontendu
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -18,10 +17,7 @@ app.add_middleware(
 
 @app.post("/optimize", response_model=OptimizationResult)
 async def optimize_endpoint(request: OptimizeRequest):
-    """
-    Endpoint przyjmuje listę formatek i konfigurację maszyny,
-    a zwraca zoptymalizowany plan rozkroju.
-    """
+
     return OptimizerService.calculate(request)
 
 if __name__ == "__main__":

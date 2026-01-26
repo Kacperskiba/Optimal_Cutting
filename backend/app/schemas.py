@@ -13,8 +13,8 @@ class ConfigRequest(BaseModel):
     plateWidth: float
     algorithm: str = "guillotine"
     allowRotation: bool = True
-    cuttingSpeed: int = 20  # m/min (prędkość wózka piły)
-    handlingTime: int = 5  # sekundy (czas na obrót/przesuw)
+    cuttingSpeed: int = 20
+    handlingTime: int = 5
     loadingTime: int = 60
 
 class OptimizeRequest(BaseModel):
